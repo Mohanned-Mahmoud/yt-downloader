@@ -4,6 +4,11 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
 
+// Declare global variables provided by the Canvas environment for TypeScript
+declare const __firebase_config: string;
+declare const __initial_auth_token: string;
+declare const __app_id: string;
+
 // Define the Firebase configuration and initial auth token from the Canvas environment
 const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
 const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : '';
@@ -24,7 +29,7 @@ interface DownloadOption {
 interface DownloadJob {
   url: string;
   selectedFormatId: string;
-  status: 'pending' | 'analyzing' | 'ready' | 'downloading' | 'complete' | 'error';
+  status: 'analyzing' | 'ready' | 'downloading' | 'complete' | 'error'; // Removed 'pending'
   progress: number;
   downloadUrl?: string;
   errorMessage?: string;
@@ -84,6 +89,7 @@ function App() {
   useEffect(() => {
     if (!jobId || !userId || !isAuthReady) return;
 
+    // Construct the document path using __app_id and userId
     const jobDocRef = doc(db, `artifacts/${__app_id}/users/${userId}/downloadJobs`, jobId);
 
     const unsubscribe = onSnapshot(jobDocRef, (docSnap) => {
@@ -146,7 +152,7 @@ function App() {
       setTimeout(async () => {
         // After "analysis", update job status to 'ready' and make formats available
         await setDoc(jobDocRef, { status: 'ready', progress: 0, errorMessage: null }, { merge: true });
-        setStatus('ready'); // UI will update via onSnapshot
+        // UI will update via onSnapshot
       }, 2000); // Simulate 2 seconds of analysis
       
     } catch (error) {
@@ -399,7 +405,7 @@ function App() {
                 {status === 'ready' && (
                   <button
                     onClick={handleDownload}
-                    disabled={!selectedFormat || status === 'downloading'}
+                    disabled={!selectedFormat || status === 'downloading' || status === 'analyzing'}
                     className="flex-1 flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-xl font-medium text-lg transition-all duration-300 hover:from-amber-700 hover:to-orange-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
                   >
                     <Download className="w-5 h-5" />
